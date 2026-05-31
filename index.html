@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VALTRACK VT | 각독·각폭 & 전적 로그</title>
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4ade80; /* 민트 그린 */
+            --primary-glow: rgba(74, 222, 128, 0.5);
+            --bg-dark: #080c10;
+            --bg-panel: rgba(15, 25, 30, 0.9);
+            --bg-card: rgba(25, 40, 50, 0.6);
+            --text-main: #f0f7f2;
+            --text-dim: #8ba396;
+            --border-glass: rgba(74, 222, 128, 0.15);
+            --sidebar-width: 280px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Noto Sans KR', sans-serif;
+            height: 100vh;
+            display: flex;
+            overflow: hidden; /* 전체 페이지 바닥 스크롤 방지 */
+        }
+
+        .bg-mesh {
+            position: fixed; inset: 0; z-index: -1;
+            background: 
+                radial-gradient(circle at 10% 10%, rgba(74, 222, 128, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 90% 90%, rgba(0, 245, 212, 0.05) 0%, transparent 50%);
+            background-color: var(--bg-dark);
+        }
+
+        /* 구조적 변경: 사이드바 & 메인 콘텐츠 영역 분리 */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: rgba(10, 15, 20, 1);
+            border-right: 1px solid var(--border-glass);
+            display: flex;
+            flex-direction: column;
+            padding: 50px 0;
+            z-index: 100;
+        }
+
+        .logo-container {
+            padding: 0 40px 60px;
+            display: flex; align-items: center; gap: 15px;
+        }
+        .logo-box {
+            width: 48px; height: 48px; background: var(--primary); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Rajdhani'; font-weight: 900; font-size: 26px;
+            color: var(--bg-dark); box-shadow: 0 0 25px var(--primary-glow);
+        }
+        .logo-text { font-family: 'Rajdhani'; font-size: 24px; font-weight: 800; letter-spacing: 2px; }
+
+        .nav-list { list-style: none; flex: 1; }
+        .nav-item {
+            padding: 20px 40px; cursor: pointer; display: flex; align-items: center; gap: 18px;
+            color: var(--text-dim); transition: 0.3s; font-size: 16px; font-weight: 700;
+        }
+        .nav-item:hover { color: var(--text-main); background: rgba(74, 222, 128, 0.04); }
+        .nav-item.active { color: var(--primary); background: rgba(74, 222, 128, 0.08); border-right: 4px solid var(--primary); }
+
+        /* 메인 컨테이너 - 스크롤 가능 구역 */
+        .main-container {
+            flex: 1;
+            height: 100vh;
+            overflow-y: auto; /* 여기에 스크롤 활성화 */
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.02), transparent);
+        }
+
+        .content-area {
+            padding: 80px 60px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h2.page-title { font-size: 48px; font-weight: 900; margin-bottom: 50px; color: #fff; }
+        h2.page-title span { color: var(--primary); }
+
+        /* 페이지 전환 */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeInUp 0.5s ease forwards; }
+        @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+        /* 각독/각폭 UI 가이드 */
+        .map-nav {
+            display: flex; gap: 12px; margin-bottom: 40px; overflow-x: auto;
+            padding-bottom: 15px; scrollbar-width: thin; scrollbar-color: var(--primary) transparent;
+        }
+        .map-btn {
+            padding: 14px 28px; background: var(--bg-card); border: 1px solid var(--border-glass);
+            border-radius: 40px; color: var(--text-dim); cursor: pointer; font-weight: 700;
+            transition: 0.3s; white-space: nowrap;
+        }
+        .map-btn.active { background: var(--primary); color: var(--bg-dark); box-shadow: 0 0 20px var(--primary-glow); }
+
+        .lineup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; }
+        .lineup-card {
+            background: var(--bg-panel); border: 1px solid var(--border-glass); border-radius: 24px;
+            overflow: hidden; transition: transform 0.3s, border-color 0.3s;
+        }
+        .lineup-card:hover { transform: translateY(-10px); border-color: var(--primary); }
+        .lineup-visual { height: 220px; background: #111; display: flex; align-items: center; justify-content: center; position: relative; }
+        .lineup-visual::after { content: '각독 이미지 준비 중'; color: rgba(255,255,255,0.1); font-size: 14px; font-weight: 800; }
+        .agent-tag {
+            position: absolute; top: 20px; left: 20px; padding: 6px 12px; border-radius: 8px;
+            font-size: 12px; font-weight: 900;
+        }
+        .tag-viper { background: #22c55e; color: #fff; }
+        .tag-brim { background: #f97316; color: #fff; }
+
+        .lineup-body { padding: 30px; }
+        .lineup-body h4 { font-size: 22px; font-weight: 800; margin-bottom: 12px; }
+        .lineup-body p { color: var(--text-dim); line-height: 1.7; font-size: 15px; }
+
+        /* 요원 조합 UI */
+        .comp-grid { display: grid; gap: 30px; }
+        .comp-entry {
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass);
+            border-radius: 28px; padding: 40px; display: flex; flex-direction: column; gap: 20px;
+        }
+        .comp-top { display: flex; justify-content: space-between; align-items: center; }
+        .map-name-lg { font-size: 32px; font-weight: 900; color: var(--primary); }
+        
+        .agent-team { display: flex; gap: 15px; }
+        .agent-label {
+            width: 60px; height: 60px; background: var(--bg-dark); border: 2px solid var(--primary);
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            font-size: 16px; font-weight: 900; color: var(--primary);
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
+        }
+
+        /* 갤러리/로그 UI */
+        .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .btn-plus {
+            background: var(--primary); color: var(--bg-dark); border: none; padding: 16px 32px;
+            border-radius: 16px; font-weight: 900; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 5px 20px var(--primary-glow);
+        }
+        .btn-plus:hover { transform: scale(1.05); }
+
+        .log-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 30px; }
+        .log-item {
+            background: var(--bg-panel); border: 1px solid var(--border-glass); border-radius: 24px;
+            padding: 30px; position: relative;
+        }
+        .log-date-txt { font-family: 'Rajdhani'; font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 20px; }
+        .log-row { display: flex; justify-content: space-between; margin-bottom: 25px; }
+        .row-box { text-align: center; }
+        .row-label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .row-val { font-size: 24px; font-weight: 900; font-family: 'Rajdhani'; }
+        
+        .val-plus { color: #4ade80; }
+        .val-minus { color: #f87171; }
+        .val-white { color: #fff; }
+
+        .log-memo-p { font-size: 14px; color: var(--text-dim); font-style: italic; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; }
+
+        /* 모달 인풋 */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000;
+            display: none; align-items: center; justify-content: center; backdrop-filter: blur(20px);
+        }
+        .modal.active { display: flex; }
+        .modal-box {
+            background: #0f171e; border: 2px solid var(--primary); border-radius: 32px;
+            padding: 50px; width: 500px;
+        }
+        .input-group { margin-bottom: 25px; }
+        .input-group label { display: block; margin-bottom: 10px; font-weight: 800; color: #8ba396; }
+        .input-text {
+            width: 100%; padding: 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass);
+            border-radius: 12px; color: #fff; font-size: 16px; outline: none;
+        }
+        .input-text:focus { border-color: var(--primary); }
+
+    </style>
+</head>
+<body>
+    <div class="bg-mesh"></div>
+
+    <aside class="sidebar">
+        <div class="logo-container">
+            <div class="logo-box">VT</div>
+            <div class="logo-text">VALTRACK</div>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item active" onclick="switchPage('lineups', this)">
+                <span class="icon">🟢</span>
+                <span>각독 & 각폭 가이드</span>
+            </li>
+            <li class="nav-item" onclick="switchPage('comps', this)">
+                <span class="icon">⚔️</span>
+                <span>맵별 강력 조합</span>
+            </li>
+            <li class="nav-item" onclick="switchPage('gallery', this)">
+                <span class="icon">📅</span>
+                <span>승리 기록 갤러리</span>
+            </li>
+        </ul>
+        <div style="padding: 40px; font-size: 11px; color: var(--text-dim); opacity: 0.5;">
+            © 2026 VALTRACK VT<br>한국어 버전 패치 완화
+        </div>
+    </aside>
+
+    <main class="main-container">
+        <div class="content-area">
+            
+            <!-- 각독/각폭 섹션 -->
+            <section id="lineups" class="tab-content active">
+                <h2 class="page-title">각독 & 각폭 <span>가이드</span></h2>
+                
+                <div class="map-nav">
+                    <button class="map-btn active" onclick="loadMap('ascent', this)">어센트</button>
+                    <button class="map-btn" onclick="loadMap('bind', this)">바인드</button>
+                    <button class="map-btn" onclick="loadMap('haven', this)">헤이븐</button>
+                    <button class="map-btn" onclick="loadMap('split', this)">스플릿</button>
+                    <button class="map-btn" onclick="loadMap('icebox', this)">아이스박스</button>
+                    <button class="map-btn" onclick="loadMap('pearl', this)">펄</button>
+                    <button class="map-btn" onclick="loadMap('lotus', this)">로터스</button>
+                    <button class="map-btn" onclick="loadMap('sunset', this)">선셋</button>
+                </div>
+
+                <div class="lineup-grid" id="lineup-display">
+                    <!-- 자바스크립트로 맵 데이터 주입 -->
+                </div>
+                <!-- 하단 여백 확보 (스크롤 확인용) -->
+                <div style="height: 100px;"></div>
+            </section>
+
+            <!-- 조합 섹션 -->
+            <section id="comps" class="tab-content">
+                <h2 class="page-title">맵별 요원 <span>추천 조합</span></h2>
+                <div class="comp-grid" id="comp-display">
+                    <!-- 자바스크립트로 조합 데이터 주입 -->
+                </div>
+                <div style="height: 100px;"></div>
+            </section>
+
+            <!-- 갤러리 섹션 -->
+            <section id="gallery" class="tab-content">
+                <div class="log-header">
+                    <h2 class="page-title" style="margin-bottom:0;">승리 기록 <span>갤러리</span></h2>
+                    <button class="btn-plus" onclick="openLogModal()">+ 오늘 전적 기록하기</button>
+                </div>
+                <div class="log-list" id="log-display">
+                    <!-- 자바스크립트로 로그 데이터 주입 -->
+                </div>
+                <div style="height: 100px;"></div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- 기록 추가 모달 -->
+    <div class="modal" id="log-modal">
+        <div class="modal-box">
+            <h3 style="font-size: 28px; margin-bottom: 30px; text-align: center;">오늘의 성적은 어떤가요?</h3>
+            <div class="input-group">
+                <label>변동 포인트 (LP)</label>
+                <input type="number" id="lp-in" class="input-text" placeholder="예: 24, -15">
+            </div>
+            <div class="input-group" style="display: flex; gap: 20px;">
+                <div style="flex:1">
+                    <label>승리 수</label>
+                    <input type="number" id="win-in" class="input-text" placeholder="0">
+                </div>
+                <div style="flex:1">
+                    <label>패배 수</label>
+                    <input type="number" id="loss-in" class="input-text" placeholder="0">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>메모 (피드백)</label>
+                <input type="text" id="memo-in" class="input-text" placeholder="오늘은 에임이 좋았다!">
+            </div>
+            <div style="display: flex; gap: 15px; margin-top: 35px;">
+                <button class="btn-plus" style="flex:2" onclick="saveNewLog()">기록 완료</button>
+                <button class="btn-plus" style="flex:1; background:#333; color:#fff;" onclick="closeLogModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 한국어 데이터 정의
+        const MAP_GUIDES = [
+            { id: 'ascent', agent: 'viper', name: '바이퍼', type: '각독', title: 'A사이트 메인 상자 각독', desc: 'A메인 뒤쪽 구석에서 하늘의 전선 교차점에 에임을 두고 발사하세요. 설치된 폭탄을 완벽하게 수비합니다.' },
+            { id: 'ascent', agent: 'brim', name: '브림스톤', type: '각폭', title: 'B사이트 기본설 각폭', desc: 'B메인 입구 계단에서 창문 모서리에 에임을 맞추고 발사하면 설해제를 방해할 수 있습니다.' },
+            { id: 'bind', agent: 'viper', name: '바이퍼', type: '각독', title: 'B사이트 롱 각독', desc: '롱 텔레포터 앞 화단에서 조준 후 발사. 스파이크 근처를 독구름으로 덮습니다.' },
+            { id: 'bind', agent: 'brim', name: '브림스톤', type: '각폭', title: 'A사이트 숏 각폭', desc: 'A숏 박스 뒤에서 램프 하단에 에임을 맞추고 던지면 트럭 옆 설치 구역에 적중합니다.' },
+            { id: 'haven', agent: 'viper', name: '바이퍼', type: '각독', title: 'C사이트 롱 장거리 각독', desc: 'C롱 끝부분 바위 뒤에서 발사. 거리 조절이 중요하며 연계 플레이에 핵심입니다.' },
+            { id: 'sunset', agent: 'viper', name: '바이퍼', type: '각독', title: 'A메인 계단 각독', desc: '계단 중간 난간에서 에임을 맞추고 발사. A 입구를 원천 봉쇄합니다.' }
+        ];
+
+        const RECOMMENDED_COMPS = [
+            { map: '어센트', agents: ['제트', '소바', '킬조이', '오멘', '케이오'], desc: '전통적인 1인 엔트리 조합으로, 소바와 케이오의 정보 수집 및 무력화가 매우 중요합니다.' },
+            { map: '바인드', agents: ['레이즈', '바이퍼', '브림스톤', '스카이', '게코'], desc: '2전략가 조합으로 사이트 컨트롤이 강력하며, 레이즈의 화력을 극대화할 수 있습니다.' },
+            { map: '헤이븐', agents: ['제트', '브리치', '킬조이', '오멘', '소바'], desc: '3개의 사이트를 커버하기 위해 정보 수집이 필수적이며, 브리치의 뇌진탕 연계가 핵심입니다.' },
+            { map: '로터스', agents: ['레이즈', '바이퍼', '오멘', '스카이', '킬조이'], desc: '빠른 사이트 점령과 구역 유지를 위해 바이퍼의 장막 활용이 필수적인 맵입니다.' },
+            { map: '선셋', agents: ['레이즈', '게코', '브리치', '오멘', '사이퍼'], desc: '중앙 컨트롤 싸움에서 게코의 스킬 회수가 전술의 핵심이 되는 최신 메타 조합입니다.' }
+        ];
+
+        let userLogs = JSON.parse(localStorage.getItem('vt_korean_logs') || '[]');
+
+        // 페이지 전환 로직
+        function switchPage(pageId, navEl) {
+            document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(pageId).classList.add('active');
+            navEl.classList.add('active');
+
+            if(pageId === 'lineups') loadMap('ascent', document.querySelector('.map-btn'));
+            if(pageId === 'comps') renderComps();
+            if(pageId === 'gallery') renderLogs();
+        }
+
+        // 각독/각폭 가이드 로드
+        function loadMap(mapId, btnEl) {
+            document.querySelectorAll('.map-btn').forEach(b => b.classList.remove('active'));
+            btnEl.classList.add('active');
+
+            const display = document.getElementById('lineup-display');
+            const data = MAP_GUIDES.filter(g => g.id === mapId);
+
+            if(data.length === 0) {
+                display.innerHTML = `<div style="grid-column: 1/-1; padding: 100px; text-align: center; color: var(--text-dim); background: rgba(255,255,255,0.02); border-radius: 20px;">아직 이 맵에 대한 데이터가 준비 중입니다.</div>`;
+                return;
+            }
+
+            display.innerHTML = data.map(g => `
+                <div class="lineup-card">
+                    <div class="lineup-visual">
+                        <div class="agent-tag ${g.agent === 'viper' ? 'tag-viper' : 'tag-brim'}">${g.name} | ${g.type}</div>
+                    </div>
+                    <div class="lineup-body">
+                        <h4>${g.title}</h4>
+                        <p>${g.desc}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 추천 조합 로드
+        function renderComps() {
+            const display = document.getElementById('comp-display');
+            display.innerHTML = RECOMMENDED_COMPS.map(c => `
+                <div class="comp-entry">
+                    <div class="comp-top">
+                        <div class="map-name-lg">${c.map}</div>
+                        <div class="agent-team">
+                            ${c.agents.map(a => `<div class="agent-label" title="${a}">${a.substring(0, 2)}</div>`).join('')}
+                        </div>
+                    </div>
+                    <p style="color:var(--text-dim); line-height: 1.8;">${c.desc}</p>
+                </div>
+            `).join('');
+        }
+
+        // 로그/갤러리 로드
+        function renderLogs() {
+            const display = document.getElementById('log-display');
+            if(userLogs.length === 0) {
+                display.innerHTML = `<div style="grid-column: 1/-1; padding: 100px; text-align: center; color: var(--text-dim);">기록이 없습니다. 첫 번째 승리를 기록해 보세요!</div>`;
+                return;
+            }
+
+            display.innerHTML = userLogs.map((l, i) => `
+                <div class="log-item">
+                    <div class="log-date-txt">${l.date}</div>
+                    <div class="log-row">
+                        <div class="row-box">
+                            <span class="row-label">LP 변동</span>
+                            <span class="row-val ${l.lp >= 0 ? 'val-plus' : 'val-minus'}">${l.lp > 0 ? '+' : ''}${l.lp}</span>
+                        </div>
+                        <div class="row-box">
+                            <span class="row-label">오늘 전적</span>
+                            <span class="row-val val-white">${l.win}승 ${l.loss}패</span>
+                        </div>
+                    </div>
+                    <div class="log-memo-p">" ${l.memo} "</div>
+                    <button onclick="delLog(${i})" style="position:absolute; top:20px; right:20px; background:none; border:none; color:#ff4655; cursor:pointer; font-size:12px;">삭제</button>
+                </div>
+            `).join('');
+        }
+
+        function openLogModal() { document.getElementById('log-modal').classList.add('active'); }
+        function closeLogModal() { document.getElementById('log-modal').classList.remove('active'); }
+
+        function saveNewLog() {
+            const lp = parseInt(document.getElementById('lp-in').value) || 0;
+            const win = parseInt(document.getElementById('win-in').value) || 0;
+            const loss = parseInt(document.getElementById('loss-in').value) || 0;
+            const memo = document.getElementById('memo-in').value || "성장 중!";
+
+            const entry = {
+                date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }),
+                lp, win, loss, memo
+            };
+
+            userLogs.unshift(entry);
+            localStorage.setItem('vt_korean_logs', JSON.stringify(userLogs));
+            renderLogs();
+            closeLogModal();
+            
+            // 초기화
+            document.getElementById('lp-in').value = '';
+            document.getElementById('win-in').value = '';
+            document.getElementById('loss-in').value = '';
+            document.getElementById('memo-in').value = '';
+        }
+
+        function delLog(i) {
+            if(confirm('이 기록을 영구적으로 삭제하시겠습니까?')) {
+                userLogs.splice(i, 1);
+                localStorage.setItem('vt_korean_logs', JSON.stringify(userLogs));
+                renderLogs();
+            }
+        }
+
+        // 초기 실행
+        window.onload = () => {
+            loadMap('ascent', document.querySelector('.map-btn'));
+        };
+    </script>
+</body>
+</html>
