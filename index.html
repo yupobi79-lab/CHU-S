@@ -113,8 +113,9 @@
             overflow: hidden; transition: transform 0.3s, border-color 0.3s;
         }
         .lineup-card:hover { transform: translateY(-10px); border-color: var(--primary); }
-        .lineup-visual { height: 220px; background: #111; display: flex; align-items: center; justify-content: center; position: relative; }
-        .lineup-visual::after { content: '각독 이미지 준비 중'; color: rgba(255,255,255,0.1); font-size: 14px; font-weight: 800; }
+        .lineup-visual { height: 220px; background: #111; overflow: hidden; position: relative; }
+        .lineup-visual img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; transition: transform 0.5s; }
+        .lineup-card:hover .lineup-visual img { transform: scale(1.1); }
         .agent-tag {
             position: absolute; top: 20px; left: 20px; padding: 6px 12px; border-radius: 8px;
             font-size: 12px; font-weight: 900;
@@ -135,12 +136,13 @@
         .comp-top { display: flex; justify-content: space-between; align-items: center; }
         .map-name-lg { font-size: 32px; font-weight: 900; color: var(--primary); }
         
-        .agent-team { display: flex; gap: 15px; }
+        .agent-team { display: flex; gap: 10px; flex-wrap: wrap; }
         .agent-label {
-            width: 60px; height: 60px; background: var(--bg-dark); border: 2px solid var(--primary);
-            border-radius: 16px; display: flex; align-items: center; justify-content: center;
-            font-size: 16px; font-weight: 900; color: var(--primary);
+            padding: 8px 16px; background: var(--bg-dark); border: 2px solid var(--primary);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 900; color: var(--primary);
             box-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
+            white-space: nowrap;
         }
 
         /* 갤러리/로그 UI */
@@ -297,12 +299,12 @@
     <script>
         // 한국어 데이터 정의
         const MAP_GUIDES = [
-            { id: 'ascent', agent: 'viper', name: '바이퍼', type: '각독', title: 'A사이트 메인 상자 각독', desc: 'A메인 뒤쪽 구석에서 하늘의 전선 교차점에 에임을 두고 발사하세요. 설치된 폭탄을 완벽하게 수비합니다.' },
-            { id: 'ascent', agent: 'brim', name: '브림스톤', type: '각폭', title: 'B사이트 기본설 각폭', desc: 'B메인 입구 계단에서 창문 모서리에 에임을 맞추고 발사하면 설해제를 방해할 수 있습니다.' },
-            { id: 'bind', agent: 'viper', name: '바이퍼', type: '각독', title: 'B사이트 롱 각독', desc: '롱 텔레포터 앞 화단에서 조준 후 발사. 스파이크 근처를 독구름으로 덮습니다.' },
-            { id: 'bind', agent: 'brim', name: '브림스톤', type: '각폭', title: 'A사이트 숏 각폭', desc: 'A숏 박스 뒤에서 램프 하단에 에임을 맞추고 던지면 트럭 옆 설치 구역에 적중합니다.' },
-            { id: 'haven', agent: 'viper', name: '바이퍼', type: '각독', title: 'C사이트 롱 장거리 각독', desc: 'C롱 끝부분 바위 뒤에서 발사. 거리 조절이 중요하며 연계 플레이에 핵심입니다.' },
-            { id: 'sunset', agent: 'viper', name: '바이퍼', type: '각독', title: 'A메인 계단 각독', desc: '계단 중간 난간에서 에임을 맞추고 발사. A 입구를 원천 봉쇄합니다.' }
+            { id: 'ascent', agent: 'viper', name: '바이퍼', type: '각독', title: 'A사이트 메인 상자 각독', desc: 'A메인 뒤쪽 구석에서 하늘의 전선 교차점에 에임을 두고 발사하세요. 설치된 폭탄을 완벽하게 수비합니다.', img: 'l_viper_ascent.png' },
+            { id: 'ascent', agent: 'brim', name: '브림스톤', type: '각폭', title: 'B사이트 기본설 각폭', desc: 'B메인 입구 계단에서 창문 모서리에 에임을 맞추고 발사하면 설해제를 방해할 수 있습니다.', img: 'l_brim_bind.png' },
+            { id: 'bind', agent: 'viper', name: '바이퍼', type: '각독', title: 'B사이트 롱 각독', desc: '롱 텔레포터 앞 화단에서 조준 후 발사. 스파이크 근처를 독구름으로 덮습니다.', img: 'l_brim_bind.png' },
+            { id: 'bind', agent: 'brim', name: '브림스톤', type: '각폭', title: 'A사이트 숏 각폭', desc: 'A숏 박스 뒤에서 램프 하단에 에임을 맞추고 던지면 트럭 옆 설치 구역에 적중합니다.', img: 'l_brim_bind.png' },
+            { id: 'haven', agent: 'viper', name: '바이퍼', type: '각독', title: 'C사이트 롱 장거리 각독', desc: 'C롱 끝부분 바위 뒤에서 발사. 거리 조절이 중요하며 연계 플레이에 핵심입니다.', img: 'l_viper_haven.png' },
+            { id: 'sunset', agent: 'viper', name: '바이퍼', type: '각독', title: 'A메인 계단 각독', desc: '계단 중간 난간에서 에임을 맞추고 발사. A 입구를 원천 봉쇄합니다.', img: 'l_viper_ascent.png' }
         ];
 
         const RECOMMENDED_COMPS = [
@@ -344,6 +346,7 @@
             display.innerHTML = data.map(g => `
                 <div class="lineup-card">
                     <div class="lineup-visual">
+                        <img src="${g.img}" alt="${g.title}">
                         <div class="agent-tag ${g.agent === 'viper' ? 'tag-viper' : 'tag-brim'}">${g.name} | ${g.type}</div>
                     </div>
                     <div class="lineup-body">
@@ -362,7 +365,7 @@
                     <div class="comp-top">
                         <div class="map-name-lg">${c.map}</div>
                         <div class="agent-team">
-                            ${c.agents.map(a => `<div class="agent-label" title="${a}">${a.substring(0, 2)}</div>`).join('')}
+                            ${c.agents.map(a => `<div class="agent-label" title="${a}">${a}</div>`).join('')}
                         </div>
                     </div>
                     <p style="color:var(--text-dim); line-height: 1.8;">${c.desc}</p>
